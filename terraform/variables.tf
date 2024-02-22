@@ -83,7 +83,12 @@ variable "eks_cluster" {
   })
 
   default = {
-    name                      = "youtube-live-eks-cluster"
+    name                      = "youtube-live-eks-cluster-03"
     enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
   }
+}
+
+variable "dns" {
+  type = string
+  default = "devopsnanuvemweek.com"
 }

@@ -1,0 +1,75 @@
+- name: Installing Application Load Balancer Controller on EKS Playbook
+  gather_facts: false
+  hosts: localhost
+  vars:
+    eks_alb_policy_name: AWSLoadBalancerControllerIAMPolicy
+    eks_cluster_name: youtube-live-eks-cluster-03
+    eks_alb_role_name: AmazonEKSLoadBalancerControllerRole
+    aws_account_id: 968225077300
+    aws_region: us-east-1
+    vpc_id: vpc-0a19a4eadd05c3eaf
+  environment: 
+    AWS_PROFILE: youtubeLive
+  tasks:
+
+    - name: Downloading an Iam Policy
+      shell: curl https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.5.4/docs/install/iam_policy.json
+      register: iam_policy_output
+
+    - name: Downloading an Iam Policy (Result)
+      debug:
+        msg: "{{ iam_policy_output.stdout }}"
+
+    - name: Creating an Iam Policy
+      shell: | 
+          aws iam create-policy \
+            --policy-name {{ eks_alb_policy_name }} \
+            --policy-document '{{ iam_policy_output.stdout }}'
+      register: iam_policy_creation_output
+
+    - name: Creating an Iam Policy (Result)
+      debug:
+        msg: "{{ iam_policy_creation_output.stdout }}"
+
+    - name: Creating Service Account
+      shell: | 
+        eksctl create iamserviceaccount \
+          --cluster={{ eks_cluster_name }} \
+          --namespace=kube-system \
+          --name=aws-load-balancer-controller \
+          --role-name {{ eks_alb_role_name }} \
+          --attach-policy-arn=arn:aws:iam::{{ aws_account_id }}:policy/{{ eks_alb_policy_name }} \
+          --approve
+      register: service_account_creation_output
+
+    - name: Creating Service Account (Result)
+      debug:
+        msg: "{{ service_account_creation_output.stdout }}"
+
+    - name: Helm Setting Up Chart
+      shell: | 
+        helm repo add eks https://aws.github.io/eks-charts
+        helm repo update eks
+      register: helm_chart_setup_output
+
+    - name: Helm Setting Up Chart (Result)
+      debug:
+        msg: "{{ helm_chart_setup_output.stdout }}"
+
+
+    - name: Helm Install ALB Controller
+      shell: | 
+        helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+          -n kube-system \
+          --set clusterName={{ eks_cluster_name }} \
+          --set serviceAccount.create=false \
+          --set region={{ aws_region }} \
+          --set vpcId={{ vpc_id }} \
+          --set serviceAccount.name=aws-load-balancer-controller 
+      register: helm_chart_setup_output
+
+    - name: Helm Install ALB Controller (Result)
+      debug:
+        msg: "{{ helm_chart_setup_output.stdout }}"
+
+
