@@ -7,7 +7,7 @@
     eks_alb_role_name: AmazonEKSLoadBalancerControllerRole
     aws_account_id: 968225077300
     aws_region: us-east-1
-    vpc_id: vpc-0a19a4eadd05c3eaf
+    vpc_id: vpc-00f7ec349174b9533
   environment: 
     AWS_PROFILE: youtubeLive
   tasks:
@@ -72,4 +72,12 @@
       debug:
         msg: "{{ helm_chart_setup_output.stdout }}"
 
+    - name: Install Argo CD
+      shell: | 
+        kubectl create namespace argocd
+        kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+      register: argocd_setup_output
 
+    - name: Install Argo CD (Result)
+      debug:
+        msg: "{{ argocd_setup_output.stdout }}"
